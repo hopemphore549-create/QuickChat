@@ -50,6 +50,11 @@ public class Main {
             boolean loginStatus = user.loginUser(enteredUsername, enteredPassword);
 
             System.out.println(user.returnLoginStatus(loginStatus));
+
+            // Only users who logged in successfully can send messages
+            if (loginStatus) {
+                QuickChat.startAfterSuccessfulLogin(scanner);
+            }
         }
 
         scanner.close();
