@@ -37,9 +37,12 @@ public class QuickChat {
 
         while (true) {
 
-            System.out.println("\n1) Send Messages");
+            System.out.println("\n===== QUICKCHAT MENU =====");
+            System.out.println("1) Send Messages");
             System.out.println("2) Show recently sent messages");
             System.out.println("3) Quit");
+            System.out.println("4) Stored Messages");
+
             System.out.print("Choose an option: ");
 
             String option = input.nextLine();
@@ -109,16 +112,17 @@ public class QuickChat {
                         String result = newMessage.SentMessage(choice);
                         System.out.println(result);
 
-                        if (choice == 1) {
+                        if (choice == 1 && result.equals(
+                                "Message successfully sent.")) {
+
                             totalSent++;
                             messagesProcessed++;
 
                             System.out.println(
                                     "Total messages sent: " + totalSent);
 
-                        } else if (choice == 3
-                                && result.equals(
-                                        "Message successfully stored.")) {
+                        } else if (choice == 3 && result.equals(
+                                "Message successfully stored.")) {
 
                             messagesProcessed++;
                         }
@@ -132,7 +136,17 @@ public class QuickChat {
 
                 case "2":
 
-                    System.out.println("Coming Soon.");
+                    System.out.println("Recently sent messages:");
+
+                    if (Message.sentMessages.isEmpty()) {
+                        System.out.println("No sent messages yet.");
+                    } else {
+                        for (Message m : Message.sentMessages) {
+                            System.out.println(m);
+                            System.out.println();
+                        }
+                    }
+
                     break;
 
                 case "3":
@@ -141,6 +155,11 @@ public class QuickChat {
                             "Total messages sent: " + totalSent);
                     System.out.println("Goodbye!");
                     return;
+
+                case "4":
+
+                    StoredMessageMenu.show(input);
+                    break;
 
                 default:
 
@@ -152,7 +171,9 @@ public class QuickChat {
     }
 
     public static void main(String[] args) {
+
         Scanner input = new Scanner(System.in);
+
         startAfterSuccessfulLogin(input);
     }
 }

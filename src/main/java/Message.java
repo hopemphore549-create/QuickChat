@@ -7,13 +7,20 @@
  *
  * @author hopem
  */
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.SecureRandom;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 public class Message {
 
@@ -21,6 +28,13 @@ public class Message {
     private static final List<Message> messages = new ArrayList<>();
     private static int nextMessageNumber = 0;
     private static int totalMessagesSent = 0;
+
+    // ===== The 5 arrays from the task =====
+    public static final ArrayList<Message> sentMessages = new ArrayList<>();
+    public static final ArrayList<Message> disregardedMessages = new ArrayList<>();
+    public static final ArrayList<Message> storedMessages = new ArrayList<>();
+    public static final ArrayList<String> messageHashes = new ArrayList<>();
+    public static final ArrayList<String> messageIDs = new ArrayList<>();
 
     private final String messageID;
     private final int messageNumber;
@@ -37,6 +51,18 @@ public class Message {
         this.messageText = messageText == null ? "" : messageText.trim();
         this.messageHash = createMessageHash();
         this.status = "Pending";
+    }
+
+    // NEW: second constructor where we give the ID, number and status ourselves.
+    // Used for the test data and for reading messages back from the JSON file.
+    public Message(String messageID, int messageNumber, String recipient,
+            String messageText, String status) {
+        this.messageID = messageID;
+        this.messageNumber = messageNumber;
+        this.recipient = recipient == null ? "" : recipient.trim();
+        this.messageText = messageText == null ? "" : messageText.trim();
+        this.messageHash = createMessageHash();
+        this.status = status;
     }
 
     public boolean checkMessageID() {
@@ -94,10 +120,12 @@ public class Message {
                 status = "Sent";
                 messages.add(this);
                 totalMessagesSent++;
+                addToArrays(this);          // NEW
                 return "Message successfully sent.";
 
             case 2:
                 status = "Disregarded";
+                addToArrays(this);          // NEW
                 return "Press 0 to delete the message.";
 
             case 3:
@@ -117,6 +145,7 @@ public class Message {
                     return "Message could not be stored.";
                 }
 
+                addToArrays(this);          // NEW
                 return "Message successfully stored.";
 
             default:
@@ -191,6 +220,218 @@ public class Message {
                 .replace("\r", "\\r")
                 .replace("\t", "\\t");
     }
+
+    // =====================================================================
+    // NEW PART 3 CODE STARTS HERE
+    // =====================================================================
+
+    // Puts a message into the right array (by its status) and saves its hash and ID.
+    public static void addToArrays(Message m) {
+        if (m.status.equals("Sent")) {
+            sentMessages.add(m);
+        } else if (m.status.equals("Stored")) {
+            storedMessages.add(m);
+        } else if (m.status.equals("Disregarded")) {
+            disregardedMessages.add(m);
+        } else {
+            return;
+        }
+        messageHashes.add(m.messageHash);
+        messageIDs.add(m.messageID);
+    }
+
+    // Empties all the arrays (used by the unit tests)
+    public static void resetArrays() {
+        sentMessages.clear();
+        disregardedMessages.clear();
+        storedMessages.clear();
+        messageHashes.clear();
+        messageIDs.clear();
+        messages.clear();
+    }
+
+    // Reads messages.json into the storedMessages array
+    public static void loadStoredFromJson() {
+        for (Message m : storedMessages) {
+            messageHashes.remove(m.messageHash);
+            messageIDs.remove(m.messageID);
+        }
+        storedMessages.clear();
+
+        Path file = Path.of("messages.json");
+        if (!Files.exists(file)) {
+            return;
+        }
+
+        try {
+            String json = Files.readString(file, StandardCharsets.UTF_8);
+            if (json.isBlank()) {
+                return;
+            }
+
+            JsonArray array = JsonParser.parseString(json).getAsJsonArray();
+            for (JsonElement element : array) {
+                JsonObject obj = element.getAsJsonObject();
+
+                String savedHash = obj.get("messageHash").getAsString();
+                int number = 0;
+                try {
+                    number = Integer.parseInt(savedHash.split(":")[1]);
+                } catch (Exception e) {
+                    number = 0;
+                }
+
+                Message m = new Message(
+                        obj.get("messageID").getAsString(),
+                        number,
+                        obj.get("recipient").getAsString(),
+                        obj.get("message").getAsString(),
+                        "Stored");
+
+                storedMessages.add(m);
+                messageHashes.add(m.messageHash);
+                messageIDs.add(m.messageID);
+            }
+        } catch (Exception e) {
+            System.out.println("Could not read messages.json: " + e.getMessage());
+        }
+    }
+
+    // Writes the storedMessages array back into messages.json
+    public static void saveStoredToJson() {
+        List<Map<String, String>> list = new ArrayList<>();
+        for (Message m : storedMessages) {
+            Map<String, String> map = new LinkedHashMap<>();
+            map.put("messageID", m.messageID);
+            map.put("messageHash", m.messageHash);
+            map.put("recipient", m.recipient);
+            map.put("message", m.messageText);
+            map.put("status", "Stored");
+            list.add(map);
+        }
+
+        try {
+            Files.writeString(Path.of("messages.json"),
+                    new Gson().toJson(list), StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            System.out.println("JSON storage error: " + e.getMessage());
+        }
+    }
+
+    // a. Sender and recipient of all stored messages
+    public static String displaySenderAndRecipient() {
+        if (storedMessages.isEmpty()) {
+            return "No stored messages.";
+        }
+        StringBuilder sb = new StringBuilder();
+        for (Message m : storedMessages) {
+            sb.append("Sender: You | Recipient: ").append(m.recipient).append("\n");
+        }
+        return sb.toString();
+    }
+
+    // b. Longest stored message
+    public static String displayLongestMessage() {
+        if (storedMessages.isEmpty()) {
+            return "No stored messages.";
+        }
+        String longest = "";
+        for (Message m : storedMessages) {
+            if (m.messageText.length() > longest.length()) {
+                longest = m.messageText;
+            }
+        }
+        return longest;
+    }
+
+    // c. Search for a message ID: gives the message text
+    public static String searchByMessageID(String id) {
+        for (Message m : allMessages()) {
+            if (m.messageID.equals(id)) {
+                return m.messageText;
+            }
+        }
+        return "Message ID not found.";
+    }
+
+    // c. Search for a message ID: gives the recipient
+    public static String findRecipientByID(String id) {
+        for (Message m : allMessages()) {
+            if (m.messageID.equals(id)) {
+                return m.recipient;
+            }
+        }
+        return "Message ID not found.";
+    }
+
+    // d. All sent or stored messages for one recipient
+    public static ArrayList<String> searchByRecipient(String recipient) {
+        ArrayList<String> results = new ArrayList<>();
+        for (Message m : sentMessages) {
+            if (m.recipient.equals(recipient)) {
+                results.add(m.messageText);
+            }
+        }
+        for (Message m : storedMessages) {
+            if (m.recipient.equals(recipient)) {
+                results.add(m.messageText);
+            }
+        }
+        return results;
+    }
+
+    // e. Delete a message using its hash
+    public static String deleteByHash(String hash) {
+        String result = removeFrom(storedMessages, hash);
+        if (result == null) {
+            result = removeFrom(sentMessages, hash);
+        }
+        if (result == null) {
+            result = removeFrom(disregardedMessages, hash);
+        }
+        if (result == null) {
+            result = "Message hash not found.";
+        }
+        return result;
+    }
+
+    private static String removeFrom(ArrayList<Message> list, String hash) {
+        for (int i = 0; i < list.size(); i++) {
+            if (list.get(i).messageHash.equals(hash)) {
+                Message m = list.remove(i);
+                messageHashes.remove(m.messageHash);
+                messageIDs.remove(m.messageID);
+                messages.remove(m);
+                return "Message: \"" + m.messageText + "\" successfully deleted.";
+            }
+        }
+        return null;
+    }
+
+    // f. Report with the full details
+    public static String displayReport() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("===== MESSAGE REPORT =====\n\n");
+        for (Message m : sentMessages) {
+            sb.append(m).append("\nStatus: Sent\n\n");
+        }
+        for (Message m : storedMessages) {
+            sb.append(m).append("\nStatus: Stored\n\n");
+        }
+        return sb.toString();
+    }
+
+    private static List<Message> allMessages() {
+        List<Message> all = new ArrayList<>();
+        all.addAll(sentMessages);
+        all.addAll(storedMessages);
+        all.addAll(disregardedMessages);
+        return all;
+    }
+
+    // =====================================================================
+    // NEW PART 3 CODE ENDS HERE
+    // =====================================================================
 
     public String getMessageID() {
         return messageID;

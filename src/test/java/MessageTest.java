@@ -2,6 +2,8 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
  * Click nbfs://nbhost/SystemFileSystem/Templates/UnitTests/JUnit5TestClass.java to edit this template
  */
+import java.util.ArrayList;
+import java.util.Arrays;
 
 import org.junit.jupiter.api.Test;
 
@@ -143,5 +145,86 @@ public class MessageTest {
                 "Invalid option.",
                 message.SentMessage(4)
         );
+    }
+    
+    // ===== PART 3 TESTS =====
+
+    private void loadTestData() {
+        Message.resetArrays();
+        Message.addToArrays(new Message("0000000001", 1, "+27834557896",
+                "Did you get the cake?", "Sent"));
+        Message.addToArrays(new Message("0000000002", 2, "+27838884567",
+                "Where are you? You are late! I have asked you to be on time.", "Stored"));
+        Message.addToArrays(new Message("0000000003", 3, "+27834484567",
+                "Yohoooo, I am at your gate.", "Disregarded"));
+        Message.addToArrays(new Message("0000000004", 4, "0838884567",
+                "It is dinner time!", "Sent"));
+        Message.addToArrays(new Message("0000000005", 5, "+27838884567",
+                "Ok, I am leaving without you.", "Stored"));
+    }
+
+    @Test
+    public void testSentMessagesArrayCorrectlyPopulated() {
+        loadTestData();
+
+        ArrayList<String> actual = new ArrayList<>();
+        for (Message m : Message.sentMessages) {
+            actual.add(m.getMessageText());
+        }
+
+        ArrayList<String> expected = new ArrayList<>(
+                Arrays.asList("Did you get the cake?", "It is dinner time!"));
+
+        assertEquals(expected, actual);
+    }
+
+    @Test
+    public void testDisplayLongestMessage() {
+        loadTestData();
+
+        assertEquals(
+                "Where are you? You are late! I have asked you to be on time.",
+                Message.displayLongestMessage());
+    }
+
+    @Test
+    public void testSearchForMessageID() {
+        loadTestData();
+
+        assertEquals("It is dinner time!",
+                Message.searchByMessageID("0000000004"));
+        assertEquals("0838884567",
+                Message.findRecipientByID("0000000004"));
+    }
+
+    @Test
+    public void testSearchMessagesForRecipient() {
+        loadTestData();
+
+        ArrayList<String> expected = new ArrayList<>(Arrays.asList(
+                "Where are you? You are late! I have asked you to be on time.",
+                "Ok, I am leaving without you."));
+
+        assertEquals(expected, Message.searchByRecipient("+27838884567"));
+    }
+
+    @Test
+    public void testDeleteMessageUsingHash() {
+        loadTestData();
+
+        assertEquals(
+                "Message: \"Where are you? You are late! I have asked you to be on time.\" successfully deleted.",
+                Message.deleteByHash("00:2:WHERETIME"));
+    }
+
+    @Test
+    public void testDisplayReport() {
+        loadTestData();
+
+        String report = Message.displayReport();
+
+        assertTrue(report.contains("Message Hash: 00:1:DIDCAKE"));
+        assertTrue(report.contains("Recipient: +27834557896"));
+        assertTrue(report.contains("Message: Did you get the cake?"));
     }
 }
