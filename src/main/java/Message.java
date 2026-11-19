@@ -1,12 +1,3 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
-
-/**
- *
- * @author hopem
- */
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -22,6 +13,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+// The Message class stores one message and holds the arrays
+// and methods used by the Stored Messages menu (Part 3).
 public class Message {
 
     private static final SecureRandom RANDOM = new SecureRandom();
@@ -53,7 +46,7 @@ public class Message {
         this.status = "Pending";
     }
 
-    // NEW: second constructor where we give the ID, number and status ourselves.
+    // Second constructor: we give the ID, number and status ourselves.
     // Used for the test data and for reading messages back from the JSON file.
     public Message(String messageID, int messageNumber, String recipient,
             String messageText, String status) {
@@ -120,12 +113,12 @@ public class Message {
                 status = "Sent";
                 messages.add(this);
                 totalMessagesSent++;
-                addToArrays(this);          // NEW
+                addToArrays(this);
                 return "Message successfully sent.";
 
             case 2:
                 status = "Disregarded";
-                addToArrays(this);          // NEW
+                addToArrays(this);
                 return "Press 0 to delete the message.";
 
             case 3:
@@ -145,7 +138,7 @@ public class Message {
                     return "Message could not be stored.";
                 }
 
-                addToArrays(this);          // NEW
+                addToArrays(this);
                 return "Message successfully stored.";
 
             default:
@@ -172,6 +165,7 @@ public class Message {
         return returnTotalMessages();
     }
 
+    // Adds this message to the end of messages.json (Part 2).
     public boolean storeMessage() {
         Path file = Path.of("messages.json");
 
@@ -222,10 +216,11 @@ public class Message {
     }
 
     // =====================================================================
-    // NEW PART 3 CODE STARTS HERE
+    // PART 3 CODE STARTS HERE
     // =====================================================================
 
-    // Puts a message into the right array (by its status) and saves its hash and ID.
+    // Puts a message into the right array (by its status)
+    // and saves its hash and ID in their own arrays.
     public static void addToArrays(Message m) {
         if (m.status.equals("Sent")) {
             sentMessages.add(m);
@@ -240,7 +235,7 @@ public class Message {
         messageIDs.add(m.messageID);
     }
 
-    // Empties all the arrays (used by the unit tests)
+    // Empties all the arrays (used by the unit tests).
     public static void resetArrays() {
         sentMessages.clear();
         disregardedMessages.clear();
@@ -250,7 +245,11 @@ public class Message {
         messages.clear();
     }
 
-    // Reads messages.json into the storedMessages array
+    // ATTRIBUTION: Reads messages.json into the storedMessages array.
+    // The JSON parsing uses the Gson library (Google, 2024).
+    // Gson User Guide: https://github.com/google/gson/blob/main/UserGuide.md
+    // File reading uses java.nio.file.Files.readString (Oracle, 2024):
+    // https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/nio/file/Files.html
     public static void loadStoredFromJson() {
         for (Message m : storedMessages) {
             messageHashes.remove(m.messageHash);
@@ -297,7 +296,9 @@ public class Message {
         }
     }
 
-    // Writes the storedMessages array back into messages.json
+    // ATTRIBUTION: Writes the storedMessages array back into messages.json.
+    // The JSON writing uses the Gson library (Google, 2024).
+    // Gson User Guide: https://github.com/google/gson/blob/main/UserGuide.md
     public static void saveStoredToJson() {
         List<Map<String, String>> list = new ArrayList<>();
         for (Message m : storedMessages) {
@@ -421,6 +422,7 @@ public class Message {
         return sb.toString();
     }
 
+    // Joins the three arrays so we can search all messages at once.
     private static List<Message> allMessages() {
         List<Message> all = new ArrayList<>();
         all.addAll(sentMessages);
@@ -430,7 +432,7 @@ public class Message {
     }
 
     // =====================================================================
-    // NEW PART 3 CODE ENDS HERE
+    // PART 3 CODE ENDS HERE
     // =====================================================================
 
     public String getMessageID() {
