@@ -169,6 +169,7 @@ public class QuickChat {
             }
         }
     }
+// Starts QuickChat on its own: creates a Scanner and opens the menu after login
 
     public static void main(String[] args) {
 
