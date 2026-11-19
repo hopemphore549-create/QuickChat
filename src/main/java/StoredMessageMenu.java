@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.Scanner;
 
 public class StoredMessageMenu {
+// Shows the Stored Messages menu and calls the method for the chosen option
 
     public static void show(Scanner scanner) {
 
